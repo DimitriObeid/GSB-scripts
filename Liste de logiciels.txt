@@ -1,0 +1,3 @@
+vlc
+thunderbird
+libreoffice
