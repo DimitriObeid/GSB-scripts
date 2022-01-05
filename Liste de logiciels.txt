@@ -1,3 +1,6 @@
+clamav
+clamtk
+tripwire
 vlc
 thunderbird
 libreoffice

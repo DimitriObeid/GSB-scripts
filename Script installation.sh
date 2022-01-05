@@ -58,9 +58,15 @@ function installation()
 
  	#***** Code *****
  	if [ ! -f "$soft_list" ]; then
-		echo "Le fichier contenant la liste des logiciels requis n'a pas été trouvé"; exit 1
+		echo >&2; echo "Le fichier contenant la liste des logiciels requis n'a pas été trouvé" >&2; echo >&2; exit 1
 	else
-		echo "Le fichier contenant la liste des logiciels requis a été trouvé dans le dossier $(pwd)"
+		echo "Le fichier contenant la liste des logiciels requis a été trouvé dans le dossier $(pwd)"; echo
+
+                if sudo apt update; then
+                        echo; echo "La mise à jour du cache d'APT a été effectuée avec succès"; echo
+                else
+                        echo >&2; echo "Impossible de faire la mise à jour du cache d'APT" >&2; echo >&2; exit 1
+                fi
 
 		while read paquet; do
 	 		echo "Installation du paquet << $paquet >>"
