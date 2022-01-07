@@ -22,6 +22,8 @@
 # Mise en place d’un mécanisme de verrouillage automatique de session en cas de non-utilisation du poste pendant un temps donné pour éviter tout accès au poste des users pendant leurs absences devant leurs postes de travail
 function set_autolock()
 {
+	# Mettre le temps de 
+	dconf write /org/gnome/desktop/session/idle-delay 600
 
 	return 0
 }
@@ -143,4 +145,4 @@ fi
 installation
 
 # Appel de la fonction de création , pour sécuriser le GRUB tout en empêchant le démarrage du système d'exploitation sans mot de passe.
-config_grub_passwd "Admin" "GSB" "Dimob"
+config_grub_passwd "Admin" "GSB" "dimob"
