@@ -1,6 +1,7 @@
 clamav
 clamtk
+libpam-cracklib
+libreoffice
+thunderbird
 tripwire
 vlc
-thunderbird
-libreoffice
