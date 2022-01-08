@@ -22,8 +22,7 @@
 # Mise en place d’un mécanisme de verrouillage automatique de session en cas de non-utilisation du poste pendant un temps donné pour éviter tout accès au poste des users pendant leurs absences devant leurs postes de travail
 function set_autolock()
 {
-	# Mettre le temps de 
-	dconf write /org/gnome/desktop/session/idle-delay 600
+	# Mettre le temps de dconf write /org/gnome/desktop/session/idle-delay 600
 
 	return 0
 }
@@ -33,14 +32,14 @@ function set_autolock()
 function set_passwd_rule()
 {
 #	sed -i 's/#PASS_MAX_DAYS   99999/PASS_MAX_DAYS   90/' /path/to/file	# Longueur minimale
-#	sed -i 's/#PASS_MAX_DAYS   99999/PASS_MAX_DAYS   90/' /path/to/file	# Durée de vie du MDP
-#       sed -i 's/#PASS_WARN_AGE   7/PASS_WARN_AGE   5/' /path/to/file		# Message d'avertissement concernant le temps restant avant que la durée de vie maximale du MDP ne soit atteinte.
+	sed -i 's/#PASS_MAX_DAYS   99999/PASS_MAX_DAYS   90/' /path/to/file	# Durée de vie du MDP
+       	sed -i 's/#PASS_WARN_AGE   7/PASS_WARN_AGE   5/' /path/to/file		# Message d'avertissement concernant le temps restant avant que la durée de vie maximale du MDP ne soit atteinte.
 #       sed -i 's/#PASS_MAX_DAYS   99999/PASS_MAX_DAYS   90/' /path/to/file	# Verrouillage du compte à 3 tentatives
 #       sed -i 's/#PASS_MAX_DAYS   99999/PASS_MAX_DAYS   90/' /path/to/file	# Durée du verrouillage
 
 	# "audit"	: Enregistre le nom de l'utilisateur dans le journal du système si l'utilisateur n'est pas trouvé
 	# "deny=3"	: Nombre de fois (3 tentatives) que le MDP peut être retapé avant que le compte ne se verrouille
-	# "unlock_time"	: Temps d'attente avant de pouvoir se connecter au compte après les trois tentatives (1 800 secondes = 30 minutes)
+	# "unlock_time"	: Durée de verrouillage | Temps d'attente avant de pouvoir se connecter au compte après les trois tentatives (1 800 secondes = 30 minutes)
 
 	# "minlen=12"	: Taille minimale du MDP
 	# "difolk=3"	: Nombre minimum de caractères différents (ici 3 caractères différents) lors qu'un changement de mot passe
@@ -146,3 +145,9 @@ installation
 
 # Appel de la fonction de création , pour sécuriser le GRUB tout en empêchant le démarrage du système d'exploitation sans mot de passe.
 config_grub_passwd "Admin" "GSB" "dimob"
+
+# Mise en place des règles de mot de passe pour chaque session.
+set_passwd_rule
+
+# Mise en place du verrouillage automatique de l'écran après un certain temps d'inactivité.
+set_autolock
