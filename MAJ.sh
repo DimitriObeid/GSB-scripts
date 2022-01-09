@@ -1,4 +1,62 @@
- #!/usr/bin/env bash
+#!/usr/bin/env bash
+
+# ----------------------
+# INFORMATIONS Du SCRIPT
+
+# Nom           : Script installation.sh
+# Description   : Ce script installe les mises à jour des logiciels
+# Auteur        : Dimitri Obeid
+# Version       : 1.0
+
+# ----------------------
+
+
+# ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; #
+
+##################################### FICHIER D'INSTALLATION ######################################
+
+#### DÉFINITION DES RESSOURCES NÉCESSAIRES À L'INSTALLATION ET À LA CONFIGURATION
+
+## DÉFINITION DES FONCTIONS DE DÉCORATION
+
+# Dessiner une ligne avec un caractère
+function DrawLine()
+{
+        echo -ne "$(tput setaf 6)"
+
+        for _ in $(eval echo -e "{1..$__BU_MAIN_TXT_COLS}"); do
+                echo -n "-"
+        done
+
+        echo -ne "$(tput sgr0)"
+
+        return 0
+
+}
+
+# Fonction de création d'un séparateur d'étapes
+function Separateur()
+{
+        #**** Paramètres ****
+        p_msg="$1"
+
+        #**** Code ****
+        echo
+
+        DrawLine
+        echo "##> $p_msg"; sleep 1
+        DrawLine
+
+        echo; echo
+
+        return 0
+}
+
+
+
+
+## DÉFINITION DES FONCTIONS UTILES
+
 
  #***** Code *****
  # Fonction d'installation des logiciels via la commande "apt update".
@@ -19,7 +77,7 @@
                 fi
 
 		while read paquet; do
-			echo "Mise à jour du paquet << $paquet >>"
+			Separateur "Mise à jour du paquet << $paquet >>"
 
 			if sudo apt upgrade "$paquet"; then echo; echo "Le paquet << $paquet >> a été mis à jour avec succès sur votre système";
 	 		else { echo "Impossible de mettre à jour le paquet << $paquet >>" >&2; echo >&2; exit 1; }; fi
@@ -40,6 +98,12 @@ function init_clamav()
 	systemctl start clamd@scan.service
 }
 
+
+
+
+# /////////////////////////////////////////////////////////////////////////////////////////////// #
+
+#***** Code *****
 
 mise_a_jour
 

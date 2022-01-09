@@ -44,7 +44,7 @@ function Separateur()
 	echo
 
         DrawLine
-        echo "##> $p_msg"
+        echo "##> $p_msg"; sleep 1
         DrawLine
 
         echo; echo
