@@ -24,7 +24,7 @@ function DrawLine()
 {
         echo -ne "$(tput setaf 6)"
 
-        for _ in $(eval echo -e "{1..$__BU_MAIN_TXT_COLS}"); do
+        for _ in $(eval echo -e "{1..$(tput cols)}"); do
                 echo -n "-"
         done
 
@@ -44,10 +44,12 @@ function Separateur()
 	echo
 
         DrawLine
-        echo "##> $p_msg"; sleep 1
+        echo "##> $p_msg"
         DrawLine
 
         echo; echo
+
+	sleep 1
 
         return 0
 }
@@ -72,7 +74,7 @@ function tripwire_config()
 
 	homedir_list="$(ls "/home")"
 
-	echo "PATH:/usr/sbin" > "/root/.bashrc"
+	echo "$PATH:/usr/sbin" >> "/root/.bashrc"
 
 	for user in "$homedir_list"; do
 		homepath="/home/$user"
