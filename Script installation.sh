@@ -55,14 +55,27 @@ function Separateur()
 
 
 
-
 ## DÉFINITION DES FONCTIONS UTILES
 
 function tripwire_config()
 {
 	Separateur "CONFIGUARTION DE TRIPWIRE"
 
-	sed -i 's/#REPORTLEVEL   =3/REPORTLEVEL   =4/' "/etc/tripwire/twcfg.txt"
+	homedir_list="$(ls "/home")"
+
+	echo "PATH:/usr/sbin" > "/root/.bashrc"
+
+	for user in "$homedir_list"; do
+		homepath="/home/$user"
+
+		echo "PATH:/usr/sbin" >> "$homepath/.bashrc"
+	done
+
+	# Entrez de nouveau votre "site passphrase"
+	twadmin -m F -c "/etc/tripwire/tw.cfg" -S "/etc/tripwire/site.key" "/etc/tripwire/twcfg.txt"
+
+        sed -i 's/REPORTLEVEL   =3/REPORTLEVEL   =4/' "/etc/tripwire/twcfg.txt"
+
 
 	tripwire --init
 	tripwire --check
@@ -115,10 +128,10 @@ function set_passwd_rule()
 
 function config_grub_passwd()
 {
-	Separateur "CONFIGURATION DU MOT DE PASSE DU GRUB"
+	Separateur "CONFIGURATION DU MOT DE PASSE DU GRUB POUR CHAQUE UTILISATEUR"
 
 	#**** Paramètres ****
-	p_tableau_utilisateurs=("$@")
+	local p_tableau_utilisateurs=("$@")
 
 	#**** Code *****
 	for utilisateur in "${p_tableau_utilisateurs[@]}"; do
@@ -128,8 +141,14 @@ function config_grub_passwd()
 	        local sha_tmp_file="/tmp/script-installation.tmp"	# Fichier temporaire où la clé générée est stockée.
 
 		#**** Code ****
+		Separateur "Création de l'utilisateur $utilisateur"
+
+		echo "Entrez le mot de passe GRUB de l'utilisateur $utilisateur"
+
 		grub-mkpasswd-pbkdf2 > "$sha_tmp_file"
 		# entrez mot de pase X2
+
+		echo
 
 		# Copier la clef SHA à partir de degrub
 		SHA_KEY="$(cat "$sha_tmp_file")"
@@ -148,6 +167,33 @@ function config_grub_passwd()
 	# Vérifier dans le fichier "/boot/grub/grub.cfg" si les lignes suivantes apparaissent (la valeur de la variable "$GSB_user" est le nom de l'utilisateur, "$SHA_KEY" celle de la clé générée).
 	# set superusers="$GSB_user"
 	# password_pbkdf2 "$GSB_user" "$SHA_KEY"
+
+	return 0
+}
+
+function create_system_users()
+{
+	Separateur "CRÉATION DES UTILISATEURS"
+
+	#**** Paramètres ****
+	local p_tableau_utilsateur=$1
+
+	#**** Code ****
+	for utilisateur in "${p_tableau_utilisateur[@]}"; do
+
+		# Si l'utilisateur n'existe pas
+		if ! id -u "$utilisateur"; then
+			echo "Création de l'utilisateur $utilisateur"; echo
+
+			# Ajout de l'utilisateur
+			adduser "$utilisateur"
+
+			# Création du MDP de l'utilisateur
+			passwd "$username"
+		else
+			echo "L'utilisateur $utilisateur existe déjà"; echo
+		fi
+	done
 
 	return 0
 }
@@ -193,10 +239,13 @@ if [ "$EUID" -ne 0 ]; then
 	echo >&2; echo "ATTENTION ! Vous devez exécuter ce script avec les privilèges du super-utilisateur" >&2; echo >&2; exit 1
 fi
 
-# Appel de la fonction d'installation
+# Appel de la fonction d'installation des logiciels
 installation
 
-# Appel de la fonction de création , pour sécuriser le GRUB tout en empêchant le démarrage du système d'exploitation sans mot de passe.
+# Appel de la fonction de création des utilisateurs
+create_system_users "Admin" "GSB" "dimob"
+
+# Appel de la fonction de création de mots de passe GRUB, pour sécuriser le GRUB tout en empêchant le démarrage du système d'exploitation sans mot de passe.
 config_grub_passwd "Admin" "GSB" "dimob"
 
 # Mise en place des règles de mot de passe pour chaque session.
