@@ -76,7 +76,7 @@ function tripwire_config()
 
 	echo "$PATH:/usr/sbin" >> "/root/.bashrc"
 
-	for user in "$homedir_list"; do
+	for user in "${homedir_list[@]}"; do
 		homepath="/home/$user"
 
 		echo "PATH:/usr/sbin" >> "$homepath/.bashrc"
@@ -156,7 +156,7 @@ function create_system_users()
 	Separateur "CRÉATION DES UTILISATEURS"
 
 	#**** Paramètres ****
-	local p_tableau_utilsateur=$1
+	local p_tableau_utilisateur=("$@")
 
 	#**** Code ****
 	for utilisateur in "${p_tableau_utilisateur[@]}"; do
@@ -175,7 +175,7 @@ function create_system_users()
 
 			# Création du MDP de l'utilisateur
 			echo "Entrez le mot de passe utilisateur"
-			passwd "$username"
+			passwd "$utilisateur"
 
 	                echo "Entrez le mot de passe GRUB de l'utilisateur $utilisateur (de préférence celui que vous avez tapé juste avant)"
 
@@ -200,7 +200,7 @@ function create_system_users()
 		else
 			echo "L'utilisateur $utilisateur existe déjà"; echo
 		fi
-	done
+	done; exit 0
 
 	return 0
 }
