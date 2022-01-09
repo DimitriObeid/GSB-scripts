@@ -1,4 +1,5 @@
 clamav
+clamav-daemon
 clamtk
 libpam-cracklib
 libreoffice

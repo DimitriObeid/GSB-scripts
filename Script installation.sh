@@ -76,7 +76,6 @@ function tripwire_config()
 
         sed -i 's/REPORTLEVEL   =3/REPORTLEVEL   =4/' "/etc/tripwire/twcfg.txt"
 
-
 	tripwire --init
 	tripwire --check
 
@@ -126,51 +125,6 @@ function set_passwd_rule()
 	return 0
 }
 
-function config_grub_passwd()
-{
-	Separateur "CONFIGURATION DU MOT DE PASSE DU GRUB POUR CHAQUE UTILISATEUR"
-
-	#**** Paramètres ****
-	local p_tableau_utilisateurs=("$@")
-
-	#**** Code *****
-	for utilisateur in "${p_tableau_utilisateurs[@]}"; do
-
-	        #**** Variables *****
-		local GSB_user="$utilisateur"				# Pour chaque utilisateur, on redéfinit la valeur de la variable "$GSB_user"
-	        local sha_tmp_file="/tmp/script-installation.tmp"	# Fichier temporaire où la clé générée est stockée.
-
-		#**** Code ****
-		Separateur "Création de l'utilisateur $utilisateur"
-
-		echo "Entrez le mot de passe GRUB de l'utilisateur $utilisateur"
-
-		grub-mkpasswd-pbkdf2 > "$sha_tmp_file"
-		# entrez mot de pase X2
-
-		echo
-
-		# Copier la clef SHA à partir de degrub
-		SHA_KEY="$(cat "$sha_tmp_file")"
-
-		# Création des utilisateurs, dans le fichier "/etc/grub.d/00_header"
-		echo ""					>> "/etc/grub.d/00_header"
-		echo "cat << EOF"			>> "/etc/grub.d/00_header"
-		echo "set superusers=\"$GSB_user\""	>> "/etc/grub.d/00_header"
-		echo "password_pbkdf2 \"$GSB_user\" \"$SHA_KEY\""	>> "/etc/grub.d/00_header"
-		echo ">> EOF"				>> "/etc/grub.d/00_header"
-
-	done
-
-	update-grub
-
-	# Vérifier dans le fichier "/boot/grub/grub.cfg" si les lignes suivantes apparaissent (la valeur de la variable "$GSB_user" est le nom de l'utilisateur, "$SHA_KEY" celle de la clé générée).
-	# set superusers="$GSB_user"
-	# password_pbkdf2 "$GSB_user" "$SHA_KEY"
-
-	return 0
-}
-
 function create_system_users()
 {
 	Separateur "CRÉATION DES UTILISATEURS"
@@ -181,6 +135,11 @@ function create_system_users()
 	#**** Code ****
 	for utilisateur in "${p_tableau_utilisateur[@]}"; do
 
+                #**** Variables *****
+                local GSB_user="$utilisateur"                           # Pour chaque utilisateur, on redéfinit la valeur de la variable "$GSB_user"
+                local sha_tmp_file="/tmp/script-installation.tmp"       # Fichier temporaire où la clé générée est stockée.
+
+		#**** Code ****
 		# Si l'utilisateur n'existe pas
 		if ! id -u "$utilisateur"; then
 			echo "Création de l'utilisateur $utilisateur"; echo
@@ -189,7 +148,29 @@ function create_system_users()
 			adduser "$utilisateur"
 
 			# Création du MDP de l'utilisateur
+			echo "Entrez le mot de passe utilisateur"
 			passwd "$username"
+
+	                echo "Entrez le mot de passe GRUB de l'utilisateur $utilisateur (de préférence celui que vous avez tapé juste avant)"
+
+                	grub-mkpasswd-pbkdf2 > "$sha_tmp_file"
+                	# entrez mot de pase X2
+
+                	echo
+
+                	# Copier la clef SHA à partir de degrub
+                	SHA_KEY="$(cat "$sha_tmp_file")"
+
+                	# Création des utilisateurs, dans le fichier "/etc/grub.d/00_header"
+                	echo ""                                 >> "/etc/grub.d/00_header"
+                	echo "cat << EOF"                       >> "/etc/grub.d/00_header"
+                	echo "set superusers=\"$GSB_user\""     >> "/etc/grub.d/00_header"
+                	echo "password_pbkdf2 \"$GSB_user\" \"$SHA_KEY\""       >> "/etc/grub.d/00_header"
+                	echo ">> EOF"
+
+        		# Vérifier dans le fichier "/boot/grub/grub.cfg" si les lignes suivantes apparaissent (la valeur de la variable "$GSB_user" est le nom de l'utilisateur, "$SHA_KEY" celle de la clé générée).
+        		# set superusers="$GSB_user"
+	        	# password_pbkdf2 "$GSB_user" "$SHA_KEY"
 		else
 			echo "L'utilisateur $utilisateur existe déjà"; echo
 		fi

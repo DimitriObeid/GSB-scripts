@@ -26,3 +26,15 @@
 		done < "$soft_list"
 	fi
  }
+
+
+function init_tripwire()
+{
+	tripwire --init
+	tripwire --check
+}
+
+
+mise_a_jour
+
+init_tripwire
