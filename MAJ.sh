@@ -34,7 +34,15 @@ function init_tripwire()
 	tripwire --check
 }
 
+function init_clamav()
+{
+	systemctl enable clamd@scan.service
+	systemctl start clamd@scan.service
+}
+
 
 mise_a_jour
 
 init_tripwire
+
+init_clamav

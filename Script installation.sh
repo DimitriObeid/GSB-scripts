@@ -57,6 +57,15 @@ function Separateur()
 
 ## DÉFINITION DES FONCTIONS UTILES
 
+function clamav_config()
+{
+	systemctl stop clamav-freshclam
+
+	freshclam
+
+	systemctl start clamav-freshclam
+}
+
 function tripwire_config()
 {
 	Separateur "CONFIGUARTION DE TRIPWIRE"
@@ -71,12 +80,27 @@ function tripwire_config()
 		echo "PATH:/usr/sbin" >> "$homepath/.bashrc"
 	done
 
-	# Entrez de nouveau votre "site passphrase"
-	twadmin -m F -c "/etc/tripwire/tw.cfg" -S "/etc/tripwire/site.key" "/etc/tripwire/twcfg.txt"
+
+	echo "Entrez de nouveau le mot de passe de votre paire de clés site"
+
+
+	# Génération de la paire de clés site
+	twadmin -m G -v -S "/etc/tripwire/site.key"
+
+	# Génération de la paire de clés locale
+	twadmin -m G -v -L "/etc/tripwire/$(hostname --fqdn)-local.key"
+
+	# Chiffrement du fichier de configuration avec la paire de clés nommée site
+	echo "Entrez de nouveau le mot de passe de votre paire de clés site"
+        twadmin -m F -c "/etc/tripwire/tw.cfg" -S "/etc/tripwire/site.key" "/etc/tripwire/twcfg.txt"
+
+	# Chiffrement du fichier de politique avec la paire de clés nommée site
+	twadmin -m P -p /etc/tripwire/tw.pol -S "/etc/tripwire/site.key /etc/tripwire/twpol.txt"
 
         sed -i 's/REPORTLEVEL   =3/REPORTLEVEL   =4/' "/etc/tripwire/twcfg.txt"
 
-	tripwire --init
+	echo "Entrez le mot de passe de votre clé de site"; echo
+	tripwire --init		|| echo "Impossible d'initialiser la base de données "
 	tripwire --check
 
 	# lire le rapport
@@ -144,8 +168,8 @@ function create_system_users()
 		if ! id -u "$utilisateur"; then
 			echo "Création de l'utilisateur $utilisateur"; echo
 
-			# Ajout de l'utilisateur
-			adduser "$utilisateur"
+			# Ajout de l'utilisateur (avec l'option '-m' pour créer son dossier personnel)
+			useradd -m "$utilisateur"
 
 			# Création du MDP de l'utilisateur
 			echo "Entrez le mot de passe utilisateur"
@@ -166,7 +190,7 @@ function create_system_users()
                 	echo "cat << EOF"                       >> "/etc/grub.d/00_header"
                 	echo "set superusers=\"$GSB_user\""     >> "/etc/grub.d/00_header"
                 	echo "password_pbkdf2 \"$GSB_user\" \"$SHA_KEY\""       >> "/etc/grub.d/00_header"
-                	echo ">> EOF"
+                	echo "EOF"
 
         		# Vérifier dans le fichier "/boot/grub/grub.cfg" si les lignes suivantes apparaissent (la valeur de la variable "$GSB_user" est le nom de l'utilisateur, "$SHA_KEY" celle de la clé générée).
         		# set superusers="$GSB_user"
@@ -223,11 +247,8 @@ fi
 # Appel de la fonction d'installation des logiciels
 installation
 
-# Appel de la fonction de création des utilisateurs
+# Appel de la fonction de création des utilisateurs et des mots de passe GRUB, pour sécuriser le GRUB tout en empêchant le démarrage du système d'exploitation sans mot de passe.
 create_system_users "Admin" "GSB" "dimob"
-
-# Appel de la fonction de création de mots de passe GRUB, pour sécuriser le GRUB tout en empêchant le démarrage du système d'exploitation sans mot de passe.
-config_grub_passwd "Admin" "GSB" "dimob"
 
 # Mise en place des règles de mot de passe pour chaque session.
 set_passwd_rule
@@ -237,3 +258,6 @@ set_autolock
 
 # Configuartion de Tripwire
 tripwire_config
+
+# Configuration de ClamAV
+clamav_config
