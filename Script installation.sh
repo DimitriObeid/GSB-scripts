@@ -17,11 +17,66 @@
 
 #### DÉFINITION DES RESSOURCES NÉCESSAIRES À L'INSTALLATION ET À LA CONFIGURATION
 
-## DÉFINITION DES FONCTIONS
+## DÉFINITION DES FONCTIONS DE DÉCORATION
+
+# Dessiner une ligne avec un caractère
+function DrawLine()
+{
+        echo -ne "$(tput setaf 6)"
+
+        for _ in $(eval echo -e "{1..$__BU_MAIN_TXT_COLS}"); do
+                echo -n "-"
+        done
+
+        echo -ne "$(tput sgr0)"
+
+        return 0
+
+}
+
+# Fonction de création d'un séparateur d'étapes
+function Separateur()
+{
+	#**** Paramètres ****
+	p_msg="$1"
+
+	#**** Code ****
+	echo
+
+        DrawLine
+        echo "##> $p_msg"
+        DrawLine
+
+        echo; echo
+
+        return 0
+}
+
+
+
+
+
+## DÉFINITION DES FONCTIONS UTILES
+
+function tripwire_config()
+{
+	Separateur "CONFIGUARTION DE TRIPWIRE"
+
+	sed -i 's/#REPORTLEVEL   =3/REPORTLEVEL   =4/' "/etc/tripwire/twcfg.txt"
+
+	tripwire --init
+	tripwire --check
+
+	# lire le rapport
+	# et verifier si des fichiers ont été modifiés
+	# regarder les levels des fichiers pour voir ceux qui ont été modifiés.
+}
 
 # Mise en place d’un mécanisme de verrouillage automatique de session en cas de non-utilisation du poste pendant un temps donné pour éviter tout accès au poste des users pendant leurs absences devant leurs postes de travail
 function set_autolock()
 {
+	Separateur "CONFIGURATION DU VERROUILLAGE DE L'ÉCRAN"
+
 	# Mettre le temps de dconf write /org/gnome/desktop/session/idle-delay 600
 
 	return 0
@@ -31,11 +86,13 @@ function set_autolock()
 # Longueur minimale 12 caractères, durée de vie : 90 jours, verrouillage de compte à 3 tentatives, durée de verrouillage 30 minutes
 function set_passwd_rule()
 {
-#	sed -i 's/#PASS_MAX_DAYS   99999/PASS_MAX_DAYS   90/' /path/to/file	# Longueur minimale
-	sed -i 's/#PASS_MAX_DAYS   99999/PASS_MAX_DAYS   90/' /path/to/file	# Durée de vie du MDP
-       	sed -i 's/#PASS_WARN_AGE   7/PASS_WARN_AGE   5/' /path/to/file		# Message d'avertissement concernant le temps restant avant que la durée de vie maximale du MDP ne soit atteinte.
-#       sed -i 's/#PASS_MAX_DAYS   99999/PASS_MAX_DAYS   90/' /path/to/file	# Verrouillage du compte à 3 tentatives
-#       sed -i 's/#PASS_MAX_DAYS   99999/PASS_MAX_DAYS   90/' /path/to/file	# Durée du verrouillage
+	Separateur "MISE EN PLACE DES RÈGLES DE MOTS DE PASSE"
+
+	sed -i 's/PASS_MAX_DAYS/#PASS_MAX_DAYS' /etc/logins.defs	# Durée de vie du MDP
+       	sed -i 's/PASS_WARN_AGE/#PASS_WARN_AGE' /etc/logins.defs	# Message d'avertissement concernant le temps restant avant que la durée de vie maximale du MDP ne soit atteinte.
+
+	echo "PASS_MAX_DAYS   90" >> /etc/logins.defs			# Durée de vie du MDP
+	echo "PASS_WARN_AGE   5" >> /etc/logins.defs			# Message d'avertissement concernant le temps restant (en jours) avant que la durée de vie maximale du MDP ne soit atteinte.
 
 	# "audit"	: Enregistre le nom de l'utilisateur dans le journal du système si l'utilisateur n'est pas trouvé
 	# "deny=3"	: Nombre de fois (3 tentatives) que le MDP peut être retapé avant que le compte ne se verrouille
@@ -58,17 +115,17 @@ function set_passwd_rule()
 
 function config_grub_passwd()
 {
+	Separateur "CONFIGURATION DU MOT DE PASSE DU GRUB"
+
 	#**** Paramètres ****
 	p_tableau_utilisateurs=("$@")
 
 	#**** Code *****
-	for utilisateur in "${p_tableau_utilisateur[@]}"; do
+	for utilisateur in "${p_tableau_utilisateurs[@]}"; do
 
 	        #**** Variables *****
 		local GSB_user="$utilisateur"				# Pour chaque utilisateur, on redéfinit la valeur de la variable "$GSB_user"
 	        local sha_tmp_file="/tmp/script-installation.tmp"	# Fichier temporaire où la clé générée est stockée.
-        	local heredoc_string="
-
 
 		#**** Code ****
 		grub-mkpasswd-pbkdf2 > "$sha_tmp_file"
@@ -77,18 +134,12 @@ function config_grub_passwd()
 		# Copier la clef SHA à partir de degrub
 		SHA_KEY="$(cat "$sha_tmp_file")"
 
-		# Création des utilisateurs
-                local heredoc_string="
-cat << EOF
-set superusers=\"$GSB_user\"
-password_pbkdf2 \"$GSB_user\" \"$SHA_KEY\"
-EOF
-"
-
-
-		# Puis dans "/etc/grub.d/00_header"
-		echo "$heredoc_string" >> "/etc/grub.d/00_header"
-		echo >> "/etc/grub.d/00_header" >> "/etc/grub.d/00_header"
+		# Création des utilisateurs, dans le fichier "/etc/grub.d/00_header"
+		echo ""					>> "/etc/grub.d/00_header"
+		echo "cat << EOF"			>> "/etc/grub.d/00_header"
+		echo "set superusers=\"$GSB_user\""	>> "/etc/grub.d/00_header"
+		echo "password_pbkdf2 \"$GSB_user\" \"$SHA_KEY\""	>> "/etc/grub.d/00_header"
+		echo ">> EOF"				>> "/etc/grub.d/00_header"
 
 	done
 
@@ -104,6 +155,8 @@ EOF
 # Fonction d'installation des logiciels via la commande "apt install".
 function installation()
 {
+	Separateur "INSTALLATION DES LOGICIELS"
+
 	#***** Variables *****
 	soft_list="Liste de logiciels.txt"
 
@@ -119,7 +172,7 @@ function installation()
                         echo >&2; echo "Impossible de faire la mise à jour du cache d'APT" >&2; echo >&2; exit 1
                 fi
 
-		while read paquet; do
+		while read -r paquet; do
 	 		echo "Installation du paquet << $paquet >>"
 	 		if sudo apt install -y "$paquet"; then echo; echo "Le paquet << $paquet >> a été installé avec succès sur votre système";
 	 		else { echo "Impossible d'installer le paquer << $paquet >>"; exit 1; }; fi
@@ -151,3 +204,6 @@ set_passwd_rule
 
 # Mise en place du verrouillage automatique de l'écran après un certain temps d'inactivité.
 set_autolock
+
+# Configuartion de Tripwire
+tripwire_config
